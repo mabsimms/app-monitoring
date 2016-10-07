@@ -9,7 +9,8 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
 {
-    public class AppInsightBlobSink : BlobContainerSink<ITelemetry>
+    public class AppInsightBlobSink : BlobContainerSink<ITelemetry>,
+        ITelemetryProcessor
     {
         private readonly ITelemetryProcessor _next;
 
@@ -20,6 +21,12 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
                 : base(blobContainer, blobPathFunc, onBlobWrittenFunc, bufferSize)
         {
             this._next = next;
+        }
+
+        public void Process(ITelemetry item)
+        {
+            this.Enqueue(item);
+            this._next.Process(item);
         }
     }
 }

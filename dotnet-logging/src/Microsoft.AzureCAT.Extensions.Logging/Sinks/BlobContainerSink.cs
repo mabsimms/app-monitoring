@@ -120,6 +120,11 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
         public void Dispose()
         {
             _memoryBuffer?.Dispose();
-        }     
+        }
+
+        public void Enqueue(T item)
+        {
+            _bufferBlock.Post(item);
+        }
     }
 }
