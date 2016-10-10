@@ -38,7 +38,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
                 "localhost"));
 
             // Update the ai client configuration
-            aiClientBuilder.Build();         
+            aiClientBuilder.Build();                     
         }
 
         private async static Task PublishToBlobStorage(IConfiguration config,

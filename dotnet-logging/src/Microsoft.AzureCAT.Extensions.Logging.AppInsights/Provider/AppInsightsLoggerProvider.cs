@@ -1,20 +1,78 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
 {
     public class AppInsightsLoggerProvider : ILoggerProvider
     {
-        private readonly TelemetryClient _client;
+        internal const string OriginalFormatPropertyName = "{OriginalFormat}";
 
-        public AppInsightsLoggerProvider()
+        private ImmutableDictionary<string, LogLevel> _levels;
+        private LogLevel _defaultLevel;
+
+        private readonly TelemetryClient _client;
+        private readonly IConfiguration _cfg;
+
+        public AppInsightsLoggerProvider(IConfiguration config)
         {
             _client = new TelemetryClient();
+
+            // Load in the level map
+            var change = config.GetReloadToken();
+            change.RegisterChangeCallback(ConfigUpdated, null);
+            _cfg = config;
+
+            LoadConfiguration();
+        }
+
+        private void ConfigUpdated(object obj)
+        {
+            LoadConfiguration();
+        }
+
+        private void LoadConfiguration()
+        {
+            var levels = _cfg.GetSection("ApplicationInsights")?.GetSection("LogLevels");
+
+            var dict = new Dictionary<string, LogLevel>();
+            LogLevel defaultLevel = LogLevel.Warning;
+
+            if (levels != null)
+            {
+                foreach (var k in levels.GetChildren())
+                {
+                    LogLevel level;
+                    if (Enum.TryParse(k.Value, true, out level))
+                        dict.Add(k.Key, level);
+                    else
+                        dict.Add(k.Key, LogLevel.Warning);
+                }
+
+                if (dict.ContainsKey("Default"))
+                {
+                    defaultLevel = dict["Default"];
+                    dict.Remove("Default");
+                }
+            }
+
+            _levels = dict.ToImmutableDictionary();
+            _defaultLevel = defaultLevel;
+        }
+
+        // TODO - fix this
+        internal bool IsEnabled(string categoryName, LogLevel level)
+        {
+            if (_levels.ContainsKey(categoryName))
+                return level >= _levels[categoryName];
+            else
+                return level >= _defaultLevel;
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -45,6 +103,11 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
             {
                 _value.Value = value;
             }
+        }
+
+        internal TelemetryClient Client
+        {
+            get { return _client; }
         }
     }
 }

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider;
 
 namespace Microsoft.AzureCAT.Samples.WebLogger
 {
@@ -54,7 +55,8 @@ namespace Microsoft.AzureCAT.Samples.WebLogger
         public void Configure(IApplicationBuilder app, 
             IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            loggerFactory.AddSerilog();
+            //loggerFactory.AddSerilog();
+            loggerFactory.AddAppInsights(Configuration);
                        
             app.UseApplicationInsightsRequestTelemetry();
             app.UseApplicationInsightsExceptionTelemetry();

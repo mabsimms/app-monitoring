@@ -23,7 +23,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            // TODO
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.Data.Edm.Library.Values;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
@@ -15,38 +16,48 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
     /// </summary>
     public class AppInsightsLogger : ILogger
     {
-        private static readonly TelemetryClient _telemetryClient;
+        internal const string MessageKey = "Message";
+
+        private readonly TelemetryClient _telemetryClient;
         private readonly AppInsightsLoggerProvider _provider;
+        private readonly string _categoryName;
 
-        static AppInsightsLogger()
-        {
-            _telemetryClient = new TelemetryClient();    
-        }
-
+        
         public AppInsightsLogger(AppInsightsLoggerProvider provider,
             string categoryName = null)
         {
             // TODO - how do we do category logging?
             this._provider = provider;
-            
+            this._telemetryClient = provider.Client;
+            this._categoryName = categoryName ?? "Default";
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        // TODO - implement category based logging from configuration
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, 
+            Exception exception, Func<TState, Exception, string> formatter)
         {
-            if (!_telemetryClient.IsEnabled())
+            if (!_provider.IsEnabled(_categoryName, logLevel))
                 return;
 
             var eventTelemetry = new EventTelemetry();
             eventTelemetry.Timestamp = DateTimeOffset.UtcNow;
 
             // TODO eventTelemetry.Sequence = 0;
-            
+            string messageTemplate = null;
+
             var structure = state as IEnumerable<KeyValuePair<string, object>>;
             if (structure != null)
             {
                 foreach (var property in structure)
                 {
-                    if (property.Key.StartsWith("@"))
+                    // Plain "printf" style log message (no embedded structure)
+                    if (property.Key == AppInsightsLoggerProvider.OriginalFormatPropertyName 
+                        && property.Value is string)
+                    {
+                        //eventTelemetry.Properties.Add(MessageKey, (string)property.Value);
+                        messageTemplate = (string) property.Value;
+                    }
+                    else if (property.Key.StartsWith("@"))
                     {
                         // Nested property - TODO, this isn't right
                         eventTelemetry.Properties.Add(property.Key.Substring(1),
@@ -55,8 +66,8 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
                     else
                     {
                         // Standard property
-                        eventTelemetry.Properties.Add(property.Key, 
-                            AsLoggableValue(state, formatter).ToString());
+                        eventTelemetry.Properties.Add(property.Key,
+                            property.Value?.ToString());
                     }
                 }   
 
@@ -64,10 +75,25 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
                 var stateType = state.GetType();
                 var stateTypeInfo = stateType.GetTypeInfo();
                 
+                // TODO - message template stuff
+                if (messageTemplate == null && !stateTypeInfo.IsGenericType)
+                {
+                    messageTemplate = "{" + stateType.Name + ":l}";
+                    // Bind the state property
+                }
             }
 
             // TODO - message template parsing
+            if (messageTemplate == null && state != null)
+            {
+                // Bind in the property
+            }
 
+            // Map in the event id
+            if (eventId.Id != 0)
+                eventTelemetry.Properties.Add("Id", eventId.Id.ToString());
+            if (eventId.Name != null)
+                eventTelemetry.Properties.Add("Name", eventId.Name);
             
             _telemetryClient.TrackEvent(eventTelemetry);
         }
