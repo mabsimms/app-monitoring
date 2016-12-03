@@ -18,6 +18,8 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AzureCAT.Extensio
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AzureCAT.Extensions.Logging.AppInsights", "src\Microsoft.AzureCAT.Extensions.Logging.AppInsights\Microsoft.AzureCAT.Extensions.Logging.AppInsights.xproj", "{B33444C3-3C63-4E84-B50A-99D9B092A22F}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AzureCAT.SvcLogger", "src\Microsoft.AzureCAT.SvcLogger\Microsoft.AzureCAT.SvcLogger.xproj", "{26EBB5AF-6FEA-4CD3-8096-675E3ABB78E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{B33444C3-3C63-4E84-B50A-99D9B092A22F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B33444C3-3C63-4E84-B50A-99D9B092A22F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B33444C3-3C63-4E84-B50A-99D9B092A22F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26EBB5AF-6FEA-4CD3-8096-675E3ABB78E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26EBB5AF-6FEA-4CD3-8096-675E3ABB78E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26EBB5AF-6FEA-4CD3-8096-675E3ABB78E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26EBB5AF-6FEA-4CD3-8096-675E3ABB78E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -49,5 +55,6 @@ Global
 		{D45B6362-B651-4E31-88B6-48B90B6F9CE0} = {1F02364A-DBE7-4CD3-85BA-B74AC56640C4}
 		{32DFB727-0B33-4FB5-B724-5BAD6176A44C} = {1F02364A-DBE7-4CD3-85BA-B74AC56640C4}
 		{B33444C3-3C63-4E84-B50A-99D9B092A22F} = {1F02364A-DBE7-4CD3-85BA-B74AC56640C4}
+		{26EBB5AF-6FEA-4CD3-8096-675E3ABB78E6} = {1F02364A-DBE7-4CD3-85BA-B74AC56640C4}
 	EndGlobalSection
 EndGlobal

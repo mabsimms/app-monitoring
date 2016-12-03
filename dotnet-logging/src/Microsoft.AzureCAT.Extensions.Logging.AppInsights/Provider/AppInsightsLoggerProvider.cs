@@ -12,7 +12,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
 {
     public class AppInsightsLoggerProvider : ILoggerProvider
     {
-        internal const string OriginalFormatPropertyName = "{OriginalFormat}";
+        public const string OriginalFormatPropertyName = "{OriginalFormat}";
 
         private ImmutableDictionary<string, LogLevel> _levels;
         private LogLevel _defaultLevel;
@@ -20,9 +20,11 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
         private readonly TelemetryClient _client;
         private readonly IConfiguration _cfg;
 
-        public AppInsightsLoggerProvider(IConfiguration config)
+		public AppInsightsLoggerProvider(IConfiguration config)
         {
             _client = new TelemetryClient();
+
+	        _client.InstrumentationKey = config.GetSection("ApplicationInsights").GetValue<string>("InstrumentationKey");
 
             // Load in the level map
             var change = config.GetReloadToken();
@@ -30,7 +32,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
             _cfg = config;
 
             LoadConfiguration();
-        }
+		}
 
         private void ConfigUpdated(object obj)
         {
@@ -42,7 +44,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
             var levels = _cfg.GetSection("ApplicationInsights")?.GetSection("LogLevels");
 
             var dict = new Dictionary<string, LogLevel>();
-            LogLevel defaultLevel = LogLevel.Warning;
+            LogLevel defaultLevel = LogLevel.Information;
 
             if (levels != null)
             {
@@ -67,7 +69,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
         }
 
         // TODO - fix this
-        internal bool IsEnabled(string categoryName, LogLevel level)
+        public bool IsEnabled(string categoryName, LogLevel level)
         {
             if (_levels.ContainsKey(categoryName))
                 return level >= _levels[categoryName];
@@ -93,7 +95,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
         readonly AsyncLocal<AppInsightsScope> _value = 
             new AsyncLocal<AppInsightsScope>();
 
-        internal AppInsightsScope CurrentScope
+        public AppInsightsScope CurrentScope
         {
             get
             {
@@ -105,7 +107,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
             }
         }
 
-        internal TelemetryClient Client
+        public TelemetryClient Client
         {
             get { return _client; }
         }

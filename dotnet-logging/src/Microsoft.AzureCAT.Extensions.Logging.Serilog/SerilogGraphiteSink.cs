@@ -10,16 +10,17 @@ using Serilog.Events;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.Serilog
 {
-    public class SerilogGraphiteSink : GraphitePublisherBase<LogEvent>, 
+    public class SerilogGraphiteSink : 
+        GraphitePublisherBase<LogEvent>, 
         ILogEventSink
     {
-        public SerilogGraphiteSink(ILogger logger, string hostName) : 
-            base(logger, hostName)
+        public SerilogGraphiteSink(string hostName) : 
+            base(hostName)
         { }
 
-        public SerilogGraphiteSink(ILogger logger, string hostName, int port, 
+        public SerilogGraphiteSink(string hostName, int port, 
             TimeSpan maxFlushTime, int maxWindowEventCount = 100) 
-                : base(logger, hostName, port, maxFlushTime, maxWindowEventCount)
+                : base(hostName, port, maxFlushTime, maxWindowEventCount)
         { }
 
         protected override IList<string> GetContent(IEnumerable<LogEvent> events)

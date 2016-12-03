@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Logging;
+using Microsoft.AzureCAT.Extensions.Logging.AppInsights.Microsoft.ApplicationInsights.Extensibility.Implementation.Tracing;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
 {
@@ -15,7 +16,6 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
     {        
         protected readonly string _host;
         protected readonly int _port;
-        protected readonly ILogger _logger;
         protected readonly BatchBlock<T> _batchBlock;        
         protected readonly ActionBlock<IEnumerable<T>> _actionBlock;
         protected readonly CancellationTokenSource _tokenSource;
@@ -23,14 +23,11 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
         private System.IDisposable[] _disposables;
 
         // TODO - how to enrich the metric name with the source identifier
-        public GraphitePublisherBase(
-            ILogger logger,
-            string hostName
-            ) : this(logger, hostName, 2003, System.TimeSpan.FromSeconds(1), 100)
+        public GraphitePublisherBase(string hostName) : 
+            this(hostName, 2003, System.TimeSpan.FromSeconds(1), 100)
         { }
 
         public GraphitePublisherBase(
-            ILogger logger,
             string hostName,
             int port,
             System.TimeSpan maxFlushTime,
@@ -38,7 +35,6 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
         {            
             this._host = hostName;
             this._port = port;
-            this._logger = logger;
             this._tokenSource = new CancellationTokenSource();
 
             this._batchBlock = new BatchBlock<T>(maxWindowEventCount,
@@ -90,9 +86,8 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
                 await PublishEvents(content);
             }
             catch (System.Exception ex)
-            {
-                // TODO - get the error handler
-                // CoreEventSource.Log.LogVerbose("GraphitePublisher publish failed: ", ex.ToString());
+            {           
+                CoreEventSource.Log.LogVerbose("GraphitePublisher publish failed: ", ex.ToString());
             }
         }
 
@@ -111,52 +106,12 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Sinks
                 {
                     foreach (var e in events)
                     {
-                        await sw.WriteLineAsync(e);
-
-                        // TODO - replace the logging consistently with an event source
-                        //_logger.LogDebug($"Sending |{e}| to graphite");
+                        await sw.WriteLineAsync(e);                       
                     }
                 }
-            }
-
-            // TODO - replace the logging consistently with an event source
-            _logger.LogInformation("Published {0} events to graphite", events.Count());
+            }            
         }
-
-        //public IList<string> GetGraphiteContent(IEnumerable<ITelemetry> eventsList)
-        //{
-        //    var contentList = new List<string>();
-        //    foreach (var e in eventsList)
-        //    {
-        //        if (e is MetricTelemetry)
-        //        {
-        //            var me = e as MetricTelemetry;
-        //            var metricName = me.Name
-        //            .ToLower()
-        //                .Replace(' ', '_')
-        //                .Replace(':', '.')
-        //                .Replace('/', '.')
-        //                .Replace("\"", "")
-        //                .TrimEnd('.')
-        //                .TrimEnd('\n')
-        //            ;
-        //            contentList.Add($"{metricName}.avg {me.Value} {me.Timestamp.ToUnixTimeSeconds()}");
-        //            contentList.Add($"{metricName}.min {me.Min} {me.Timestamp.ToUnixTimeSeconds()}");
-        //            contentList.Add($"{metricName}.max {me.Max} {me.Timestamp.ToUnixTimeSeconds()}");
-        //            contentList.Add($"{metricName}.count {me.Count} {me.Timestamp.ToUnixTimeSeconds()}");
-        //            contentList.Add($"{metricName}.stddev {me.StandardDeviation} {me.Timestamp.ToUnixTimeSeconds()}");
-
-        //            if (me.Properties.ContainsKey("P50"))
-        //                contentList.Add($"{metricName}.p50 {me.Properties["P50"]} {me.Timestamp.ToUnixTimeSeconds()}");
-        //            if (me.Properties.ContainsKey("P90"))
-        //                contentList.Add($"{metricName}.p90 {me.Properties["P90"]} {me.Timestamp.ToUnixTimeSeconds()}");
-        //            if (me.Properties.ContainsKey("P99"))
-        //                contentList.Add($"{metricName}.p99 {me.Properties["P99"]} {me.Timestamp.ToUnixTimeSeconds()}");
-        //        }
-        //    }
-        //    return contentList;
-        //}
-
+         
         public void Dispose()
         {
             _tokenSource.Cancel();

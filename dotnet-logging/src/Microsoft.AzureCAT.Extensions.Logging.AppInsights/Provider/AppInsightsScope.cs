@@ -15,8 +15,6 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights.Provider
         {
             _provider = provider;
             _state = state;
-            
-
         }
 
         public AppInsightsScope Parent { get; }

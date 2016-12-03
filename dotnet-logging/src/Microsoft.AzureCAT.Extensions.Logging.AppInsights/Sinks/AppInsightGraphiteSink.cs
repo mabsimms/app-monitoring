@@ -10,26 +10,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
 {
-    public class AppInsightGraphiteSink : GraphitePublisherBase<ITelemetry>, 
+    public class AppInsightGraphiteSink : 
+        GraphitePublisherBase<ITelemetry>, 
         ITelemetryProcessor
     {
         protected readonly ITelemetryProcessor _next;
 
         public AppInsightGraphiteSink(ITelemetryProcessor next,
-            ILogger logger,
-            string hostName)
-            : base(logger, hostName)
+            string hostName) : base(hostName)
         {
             this._next = next;
         }
 
-        public AppInsightGraphiteSink(ITelemetryProcessor next,
-            ILogger logger,
+        public AppInsightGraphiteSink(ITelemetryProcessor next,    
             string hostName,
             int port,
             System.TimeSpan maxFlushTime,
             int maxWindowEventCount = 100)
-             : base(logger, hostName, port, maxFlushTime, maxWindowEventCount)
+                : base(hostName, port, maxFlushTime, maxWindowEventCount)
         {
             this._next = next;
         }

@@ -8,6 +8,7 @@ using Microsoft.ApplicationInsights.Extensibility.Implementation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.AzureCAT.Extensions.Logging.AppInsights.Enrichers;
 
 namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
 {
@@ -15,27 +16,48 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
     {
         public static async Task Initialize(IConfiguration config)
         {
+            var appInsightConfig = config.GetSection("ApplicationInsights");
+
             // Use the custom in-memory pipeline publishing channel
             TelemetryConfiguration.Active.TelemetryChannel =
                 new InMemoryPublishingChannel(500, TimeSpan.FromSeconds(30));
+            TelemetryConfiguration.Active.TelemetryInitializers.Add(
+                new ContextEnricher(config));
 
             // Set up a custom app insights pipeline
             var aiClientBuilder = TelemetryConfiguration.Active
                 .TelemetryProcessorChainBuilder;
 
+            
             // Publish raw events directly to blob storage
-            await PublishToBlobStorage(config, aiClientBuilder);
+            await PublishToBlobStorage(appInsightConfig, aiClientBuilder);
+
+            // Set up a direct publisher to elasticsearch
+            var elkConfigSection = appInsightConfig.GetSection("ElasticSearch");
+            if (elkConfigSection != null || elkConfigSection.Value == null)
+            {
+                // Set up the elastic search publisher
+                var elasticEndpoint = elkConfigSection.GetValue<string>("target");      
+                aiClientBuilder.Use((next) => AppInsightElasticSearchPublisher
+                    .CreateAsync(next, elasticEndpoint).Result);
+            }
 
             // Set up an in-memory aggregator
-            var aggConfigSection = config.GetSection("ApplicationInsights")
-                .GetSection("SlidingWindow");
-            aiClientBuilder.Use((next) => new AppInsightAggregator(
-                next: next,
-                config: aggConfigSection));
+            var aggConfigSection = appInsightConfig.GetSection("SlidingWindow");
+            if (aggConfigSection != null)
+            {
+                aiClientBuilder.Use((next) => new AppInsightAggregator(
+                    next: next,
+                    config: aggConfigSection));
+            }
 
             // Set up graphite configuration
-            aiClientBuilder.Use((next) => new AppInsightGraphiteSink(next, null,
-                "localhost"));
+            var graphiteSection = appInsightConfig.GetSection("Graphite");
+            if (graphiteSection != null)
+            {
+                var graphiteHost = graphiteSection.GetValue<string>("hostname");
+                aiClientBuilder.Use((next) => new AppInsightGraphiteSink(next, "localhost"));
+            }
 
             // Update the ai client configuration
             aiClientBuilder.Build();                     
@@ -44,8 +66,10 @@ namespace Microsoft.AzureCAT.Extensions.Logging.AppInsights
         private async static Task PublishToBlobStorage(IConfiguration config,
             TelemetryProcessorChainBuilder aiClientBuilder)
         {
-            var blobConfigSection = config.GetSection("ApplicationInsights")
-               .GetSection("BlobPublisher");
+            var blobConfigSection = config.GetSection("BlobPublisher");
+            if (blobConfigSection == null || blobConfigSection.Value == null)
+                return;
+
             var storageAccountString = blobConfigSection.GetValue<string>("BlobAccount");
             var containerName = blobConfigSection.GetValue<string>("ContainerName");
 

@@ -11,7 +11,7 @@ namespace Microsoft.AzureCAT.Extensions.Logging.Serilog
              IConfiguration config)
         {
             var server = config.GetValue<string>("serilog:graphite:server", "127.0.0.1");
-            var sink = new SerilogGraphiteSink(null, server);
+            var sink = new SerilogGraphiteSink(server);
             return loggerConfiguration.Sink(sink);
         }
     }
